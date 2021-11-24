@@ -1,2 +1,2 @@
 # georgian_letters
-CVAE
+CVAE for generation of georgian alphabet letters
