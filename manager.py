@@ -8,14 +8,17 @@ import seaborn
 seaborn.set()
 np.set_printoptions(threshold=sys.maxsize)
 
-from keras.layers import Input, Dense, Flatten, Reshape
 from keras.models import Model
+from keras.layers import Input, Dense, Flatten, Reshape
+from mlflow import log_metric, log_param, log_artifacts
+
 
 batch_size = 500
 latent_dim = 8
 dropout_rate = 0.3
 start_lr = 0.001
 num_classes = 41
+
 
 # загружаем изображения
 train_dataset = tf.keras.preprocessing.image_dataset_from_directory(
@@ -100,9 +103,21 @@ autoencoder = Model(input_img, decoder(encoder(input_img)), name = "autoencoder"
 autoencoder.compile(optimizer="adam", loss="binary_crossentropy")
 autoencoder.summary()
 
-autoencoder.fit(numpy_train_images, numpy_train_images, 
+log_param("epochs", 50)
+log_param("batch_size", 32)
+
+history = autoencoder.fit(numpy_train_images, numpy_train_images, 
                 epochs=50, batch_size=32, shuffle=True, 
                 validation_data=(numpy_val_images, numpy_val_images))
+
+log_metric("loss", history.history["loss"][-1])
+log_metric("val_loss", history.history["val_loss"][-1])
+
+if not os.path.exists("georgian_letters/outputs"):
+    os.makedirs("georgian_letters/outputs")
+with open("georgian_letters/outputs/test.txt", "w") as f:
+    f.write("georgian letters autoencoder")
+log_artifacts("outputs")
 
 # Отрисовка букв
 def plot_digits(*args):
