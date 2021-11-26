@@ -67,11 +67,10 @@ if __name__ == "__main__":
 
     # Конфигурируем роизводительность датасета
     AUTOTUNE = tf.data.AUTOTUNE
-
     train_dataset = train_dataset.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
     val_dataset = val_dataset.cache().prefetch(buffer_size=AUTOTUNE)
 
-    train_dataset = train_dataset.map(lambda x, y: (tf.divide(x, 255), y))
+    #train_dataset = train_dataset.map(lambda x, y: (tf.divide(x, 255), y))
     #y = np.concatenate([y for x, y in train_dataset], axis=0)
 
     for images, labels in train_dataset.take(-1):  # only take first element of dataset
@@ -86,7 +85,7 @@ if __name__ == "__main__":
     numpy_val_images = numpy_val_images / 255.
 
     # Размерность кодированного представления
-    encoding_dim = 49*3
+    encoding_dim = 49*2*3
 
     # Энкодер
     # Входной плейсхолдер
@@ -110,23 +109,26 @@ if __name__ == "__main__":
     autoencoder.summary()
 
     with mlflow.start_run():
+        epochs = 800
+        batch_size = 256
 
         history = autoencoder.fit(numpy_train_images, numpy_train_images, 
-                        epochs=500, batch_size=256, shuffle=True, 
+                        epochs=epochs, batch_size=batch_size, shuffle=True, 
                         validation_data=(numpy_val_images, numpy_val_images))
 
-        log_param("epochs", 50)
-        log_param("batch_size", 32)
+        log_param("epochs", epochs)
+        log_param("batch_size", batch_size)
+        log_param("encoding_dim", encoding_dim)
         log_metric("loss", history.history["loss"][-1])
         log_metric("val_loss", history.history["val_loss"][-1])
 
         tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
         print(tracking_url_type_store)
 
-        if tracking_url_type_store != "file":
-            mlflow.sklearn.log_model(autoencoder, "model", registered_model_name="autoencoder")
-        else:
-            mlflow.sklearn.log_model(autoencoder, "model")
+        #if tracking_url_type_store != "file":
+        #    mlflow.sklearn.log_model(autoencoder, "model", registered_model_name="autoencoder")
+        #else:
+        #    mlflow.sklearn.log_model(autoencoder, "model")
 
 
 """
@@ -148,10 +150,10 @@ def plot_digits(*args):
 
 n = 10
 imgs = numpy_val_images[:n]
-encoded_imgs = encoder.predict(imgs, batch_size=n)
+encoded_imgs = encoder.predict(imgs, batch_size=batch_size)
 encoded_imgs[0]
 
-decoded_imgs = decoder.predict(encoded_imgs, batch_size=n)
-decoded_imgs = decoded_imgs * 255
+decoded_imgs = decoder.predict(encoded_imgs, batch_size=batch_size)
+#decoded_imgs = decoded_imgs * 255.
 plot_digits(imgs, decoded_imgs)
 """
