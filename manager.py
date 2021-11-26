@@ -73,6 +73,9 @@ for images, labels in val_dataset.take(-1):  # only take first element of datase
     numpy_val_images = images.numpy()
     numpy_val_labels = labels.numpy()
 
+numpy_train_images = numpy_train_images / 255.
+numpy_val_images = numpy_val_images / 255.
+
 # Размерность кодированного представления
 encoding_dim = 49*3
 
@@ -123,4 +126,5 @@ encoded_imgs = encoder.predict(imgs, batch_size=n)
 encoded_imgs[0]
 
 decoded_imgs = decoder.predict(encoded_imgs, batch_size=n)
+decoded_imgs = decoded_imgs * 255
 plot_digits(imgs, decoded_imgs)
