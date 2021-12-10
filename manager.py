@@ -92,27 +92,31 @@ if __name__ == "__main__":
     input_img = Input(shape=(28, 28, 3))
     # Вспомогательный слой решейпинга
     flat_img = Flatten()(input_img)
+    x = Dense(encoding_dim*3, activation='relu')(flat_img)
+    x = Dense(encoding_dim*2, activation='relu')(x)
     # Кодированное полносвязным слоем представление
-    encoded = Dense(encoding_dim, activation="relu")(flat_img)
+    encoded = Dense(encoding_dim, activation="linear")(flat_img)
 
     # Декодер
     # Раскодированное другим полносвязным слоем изображение
     input_encoded = Input(shape=(encoding_dim, ))
+    x = Dense(encoding_dim*2, activation='relu')(input_encoded)
+    x = Dense(encoding_dim*3, activation='relu')(x)
     flat_decoded = Dense(28*28*3, activation="sigmoid")(input_encoded)
     decoded = Reshape((28, 28, 3))(flat_decoded)
 
-    encoder = Model(input_img, encoded, name="encoder")
-    decoder = Model(input_encoded, decoded, name = "decoder")
-    autoencoder = Model(input_img, decoder(encoder(input_img)), name = "autoencoder")
+    d_encoder = Model(input_img, encoded, name="encoder")
+    d_decoder = Model(input_encoded, decoded, name = "decoder")
+    d_autoencoder = Model(input_img, d_decoder(d_encoder(input_img)), name = "autoencoder")
 
-    autoencoder.compile(optimizer="adam", loss="binary_crossentropy")
-    autoencoder.summary()
+    d_autoencoder.compile(optimizer="adam", loss="binary_crossentropy")
+    d_autoencoder.summary()
 
     with mlflow.start_run():
         epochs = 800
         batch_size = 256
 
-        history = autoencoder.fit(numpy_train_images, numpy_train_images, 
+        history = d_autoencoder.fit(numpy_train_images, numpy_train_images, 
                         epochs=epochs, batch_size=batch_size, shuffle=True, 
                         validation_data=(numpy_val_images, numpy_val_images))
 
@@ -150,10 +154,10 @@ def plot_digits(*args):
 
 n = 10
 imgs = numpy_val_images[:n]
-encoded_imgs = encoder.predict(imgs, batch_size=batch_size)
+encoded_imgs = d_encoder.predict(imgs, batch_size=batch_size)
 encoded_imgs[0]
 
-decoded_imgs = decoder.predict(encoded_imgs, batch_size=batch_size)
+decoded_imgs = d_decoder.predict(encoded_imgs, batch_size=batch_size)
 #decoded_imgs = decoded_imgs * 255.
 plot_digits(imgs, decoded_imgs)
 """
